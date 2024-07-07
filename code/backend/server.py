@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import ollama
 from werkzeug.security import generate_password_hash, check_password_hash
+import logging
 
 import mysql.connector
 
@@ -169,6 +170,8 @@ def getPatientHistory():
     data = request.json
     name = data.get('patient_name')
     patient_id = data.get('patient_id')
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
 
     cursor = mydb.cursor(dictionary=True)
 
@@ -176,13 +179,36 @@ def getPatientHistory():
     #     query = "SELECT * FROM history WHERE name = %s"
     #     cursor.execute(query, (name,))
     if patient_id:
-        query = "SELECT details, date FROM history WHERE patient_id = %s"
-        cursor.execute(query, (patient_id,))
+        query = "SELECT details, date FROM history WHERE patient_id = %s and date>= %s and date<= %s"
+        cursor.execute(query, (patient_id, start_date, end_date,))
     else:
         return jsonify({'error': 'Invalid request'}), 400
 
     result = cursor.fetchall()
     return jsonify(result), 200
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+
+
+@app.route('/api/savePatientHistory',methods=['POST'])
+def savePatientHistory():
+    data = request.json
+    patient_id = data.get('patient_id')
+    details = data.get('historyDetails')
+    date = data.get('date')
+
+    cursor = mydb.cursor(dictionary=True)
+
+    if patient_id and details:
+        query = "INSERT INTO history (patient_id, date, details) VALUES (%s, %s, %s)"
+        cursor.execute(query, (patient_id, date, details,))
+    else:
+        return jsonify({'error': 'Invalid request'}), 400
+
+    mydb.commit()
+    cursor.close()
+    return jsonify({'message': 'History saved successfully'}), 200
 
 @app.route('/api/patientData',methods=['POST'])
 def getPatientData():

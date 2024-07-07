@@ -95,6 +95,25 @@ const DataInputForm: React.FC<any> = (props) => {
     return age;
   };
 
+  const saveHistoryData = async (patient_id: number, historyDate: Date, voice2TextInput: string) => {
+    try {
+      const response = await fetch("http://localhost:8080/api/savePatientHistory", {
+          method: "POST",
+          headers: {"Content-Type": "application/json",},
+          body: JSON.stringify({patient_id: patient_id, date: historyDate, historyDetails: voice2TextInput}),
+      });
+
+      const responseData = await response.json();
+      if (!response.ok) {
+          console.log("Error occured")
+          
+      }
+    } catch (error:any) {
+        console.log("Login failed", error.message);
+    }
+
+  }
+
   const handleGenLetterClick = async (voice2TextInput: string) => {
     try {
       const { patient_id, patient_name, birthdate } = selectedPatientDetails;
@@ -113,6 +132,7 @@ const DataInputForm: React.FC<any> = (props) => {
 
       setLoading(true);
       setOutput("");
+      saveHistoryData(patient_id, selectedDate0, voice2TextInput);
       const response = await fetch("http://localhost:5050/api/generate", {
         //ollama serve api
         method: "POST",
@@ -258,11 +278,10 @@ const DataInputForm: React.FC<any> = (props) => {
     console.log(patient_id, patient_name);
 
     try {
-      console.log(patient_id, patient_name);
       const response = await fetch("http://localhost:8080/api/patientHistory", {
           method: "POST",
           headers: {"Content-Type": "application/json",},
-          body: JSON.stringify({ patient_name: patient_name, patient_id:patient_id}),
+          body: JSON.stringify({ patient_name: patient_name, patient_id:patient_id, start_date: selectedDate1, end_date: selectedDate2}),
       });
 
 
@@ -271,22 +290,22 @@ const DataInputForm: React.FC<any> = (props) => {
       }
     
       const responseData = await response.json();
-      console.log(responseData);
-      // setHistoryDetails(responseData.map((item: { details: any; }) => item.details));
-
+      
       const processedData = responseData.map((item: { details: string; date: string; }) => {
-        const detailsArray = item.details.split("\r\n"); // Assuming details are split by "\r\n"
+      const detailsArray = item.details.split("\n");
         
-        const date = item.date; // Extract date from the details
-        const details = detailsArray.filter(line => !line.startsWith("Date:")).join("\r\n"); // Exclude date line from details
+      const date = item.date;
+      const details = detailsArray.filter(line => !line.startsWith("Date:")).join("\n");
   
-        return { date, details};
-      });
-  
-      console.log(processedData)
       setHistoryDetails(processedData);
 
+      return { date, details};
+      });
+  
+      console.log("processedData:", processedData)
 
+    
+      
     } catch (error:any) {
         console.log("Login failed", error.message);
     }
