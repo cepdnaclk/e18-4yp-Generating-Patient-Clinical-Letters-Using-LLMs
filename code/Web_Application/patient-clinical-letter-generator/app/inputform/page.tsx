@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { TextField, Button, useRadioGroup, Modal, Box, Typography } from "@mui/material";
+import { useRouter } from "next/navigation";
+import {
+  TextField,
+  Button,
+  useRadioGroup,
+  Modal,
+  Box,
+  Typography,
+} from "@mui/material";
 import Tooltip from "@mui/material/Tooltip";
 import Image from "next/image";
 
@@ -30,6 +38,7 @@ import PatientSearchBar from "@/components/PatientSearchBar";
 import PatientSearchResults from "@/components/PatientSearchResults";
 
 import profilePic from "@/public/images/profile_pic.jpg";
+import { Router } from "next/router";
 
 interface PatientDetails {
   patient_id: number;
@@ -49,6 +58,7 @@ const DataInputForm: React.FC<any> = (props) => {
   const [input, setInput] = useState("");
   const [period, setPeriod] = useState("");
   const [patientID, setPatientID] = useState("");
+  const router = useRouter();
 
   const [micState, setMicState] = useState(false);
   // const [genLetIsClicked, setGenLetIsClicked] = useState(false);
@@ -76,7 +86,7 @@ const DataInputForm: React.FC<any> = (props) => {
   const [selectedDate2, setSelectedDate2] = useState<Date>(new Date());
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [historyDetails, setHistoryDetails] = useState<HistoryDetail[]>([]);
-  const [patientname,setPatientname] = useState("");
+  const [patientname, setPatientname] = useState("");
 
   const calculateAge = (birthdate: string) => {
     const birthDate = new Date(birthdate);
@@ -95,24 +105,33 @@ const DataInputForm: React.FC<any> = (props) => {
     return age;
   };
 
-  const saveHistoryData = async (patient_id: number, historyDate: Date, voice2TextInput: string) => {
+  const saveHistoryData = async (
+    patient_id: number,
+    historyDate: Date,
+    voice2TextInput: string
+  ) => {
     try {
-      const response = await fetch("http://localhost:8080/api/savePatientHistory", {
+      const response = await fetch(
+        "http://localhost:8080/api/savePatientHistory",
+        {
           method: "POST",
-          headers: {"Content-Type": "application/json",},
-          body: JSON.stringify({patient_id: patient_id, date: historyDate, historyDetails: voice2TextInput}),
-      });
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patient_id: patient_id,
+            date: historyDate,
+            historyDetails: voice2TextInput,
+          }),
+        }
+      );
 
       const responseData = await response.json();
       if (!response.ok) {
-          console.log("Error occured")
-          
+        console.log("Error occured");
       }
-    } catch (error:any) {
-        console.log("Login failed", error.message);
+    } catch (error: any) {
+      console.log("Login failed", error.message);
     }
-
-  }
+  };
 
   const handleGenLetterClick = async (voice2TextInput: string) => {
     try {
@@ -267,11 +286,10 @@ const DataInputForm: React.FC<any> = (props) => {
   };
 
   useEffect(() => {
-    console.log("History details:",historyDetails);
+    console.log("History details:", historyDetails);
   }, [historyDetails]);
 
-
-  const viewHistory = async() => {
+  const viewHistory = async () => {
     setModalIsOpen(true);
     console.log("try");
     const { patient_id, patient_name, birthdate } = selectedPatientDetails;
@@ -279,42 +297,47 @@ const DataInputForm: React.FC<any> = (props) => {
 
     try {
       const response = await fetch("http://localhost:8080/api/patientHistory", {
-          method: "POST",
-          headers: {"Content-Type": "application/json",},
-          body: JSON.stringify({ patient_name: patient_name, patient_id:patient_id, start_date: selectedDate1, end_date: selectedDate2}),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patient_name: patient_name,
+          patient_id: patient_id,
+          start_date: selectedDate1,
+          end_date: selectedDate2,
+        }),
       });
-
 
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
-    
+
       const responseData = await response.json();
-      
-      const processedData = responseData.map((item: { details: string; date: string; }) => {
-      const detailsArray = item.details.split("\n");
-        
-      const date = item.date;
-      const details = detailsArray.filter(line => !line.startsWith("Date:")).join("\n");
-  
+
+      const processedData = responseData.map(
+        (item: { details: string; date: string }) => {
+          const detailsArray = item.details.split("\n");
+
+          const date = item.date;
+          const details = detailsArray
+            .filter((line) => !line.startsWith("Date:"))
+            .join("\n");
+
+          return { date, details };
+        }
+      );
+
       setHistoryDetails(processedData);
 
-      return { date, details};
-      });
-  
-      console.log("processedData:", processedData)
-
-    
-      
-    } catch (error:any) {
-        console.log("Login failed", error.message);
+      console.log("processedData:", processedData);
+    } catch (error: any) {
+      console.log("Login failed", error.message);
     }
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    const day = date.getUTCDate().toString().padStart(2, '0');
-    const month = date.toLocaleString('en-GB', { month: 'short' });
+    const day = date.getUTCDate().toString().padStart(2, "0");
+    const month = date.toLocaleString("en-GB", { month: "short" });
     const year = date.getUTCFullYear();
     return `${day} ${month} ${year}`;
   };
@@ -325,10 +348,22 @@ const DataInputForm: React.FC<any> = (props) => {
 
   return (
     <div className="data-input-container box-border w-full h-screen flex flex-col px-7 md:px-16 py-2">
-     <div className="menu-bar w-full px-1 h-16 text-white flex flex-row place-content-between pt-2 mb-3">
-        <div><MyDatePicker labelName = "Date:" type = "default"  selectedDate={selectedDate0} onDateChange={handleDefaultChange}/></div>
+      <div className="menu-bar w-full px-1 h-16 text-white flex flex-row place-content-between pt-2 mb-3">
+        <div>
+          <MyDatePicker
+            labelName="Date:"
+            type="default"
+            selectedDate={selectedDate0}
+            onDateChange={handleDefaultChange}
+          />
+        </div>
         <div className="right-menu-items h-fit w-fit flex flex-row">
-          <div className="flex items-center bg-slate-500 hover:bg-slate-400 px-2 py-1 rounded-2xl mr-4">
+          <div
+            className="flex items-center bg-slate-500 hover:bg-slate-400 px-2 py-1 rounded-2xl mr-4"
+            onClick={() => {
+              router.push("/");
+            }}
+          >
             <SettingsRoundedIcon />
           </div>
           <div className="flex items-center bg-slate-500 hover:bg-slate-400 rounded-2xl">
@@ -341,7 +376,8 @@ const DataInputForm: React.FC<any> = (props) => {
             </div>
             <div className="user-name px-2 py-1 ml-2">
               <label className="text-white text-md font-medium">
-                Doctor Username
+                {/* Doctor Username */}
+                Madhushan Nanayakkara
               </label>
             </div>
             <KeyboardArrowDownRoundedIcon className=" mr-3" />
@@ -438,22 +474,34 @@ const DataInputForm: React.FC<any> = (props) => {
               Patient History
             </div>
             <div className="period-select flex-glow bg-slate-700 w-full h-full flex items-center justify-center rounded-md py-3">
-              <label className="font-sans font-medium tracking-wide pr-5">
+              <label className="font-sans text-slate-200 font-medium tracking-wide pr-10">
                 Period
               </label>
 
-              <MyDatePicker labelName="" type = "history"  selectedDate={selectedDate1} onDateChange={handleDate1Change}/>
-              <label className="font-sans font-medium tracking-wide pr-5 ml-5" style={{ color: 'white' }}>
-              -
+              <label className="font-sans text-slate-200 text-sm font-medium tracking-wide pr-1">
+                from
               </label>
-              <MyDatePicker labelName="" type = "history"  selectedDate={selectedDate2} onDateChange={handleDate2Change}/>
-              
+              <MyDatePicker
+                labelName=""
+                type="history"
+                selectedDate={selectedDate1}
+                onDateChange={handleDate1Change}
+              />
+              <label className="font-sans text-slate-200 text-sm font-medium tracking-wide px-1">
+                to
+              </label>
+              <MyDatePicker
+                labelName=""
+                type="history"
+                selectedDate={selectedDate2}
+                onDateChange={handleDate2Change}
+              />
 
               <Button
                 style={{
-                  marginLeft: "8px",
+                  marginLeft: "15px",
                   backgroundColor: "#0EA5E9",
-                  padding: "0 10px",
+                  padding: "1px 10px",
                   textTransform: "capitalize",
                 }}
                 variant="contained"
@@ -464,7 +512,7 @@ const DataInputForm: React.FC<any> = (props) => {
             </div>
           </div>
         </div>
-        <div className= "box w-full md:w-1/2 h-full md:mr-4 flex flex-col">
+        <div className="box w-full md:w-1/2 h-full flex flex-col">
           <div className="box data-input-form flex flex-col w-full h-full">
             <div className="font-sans text-lg font-medium tracking-wide ml-3 h-12">
               Output
@@ -561,10 +609,21 @@ const DataInputForm: React.FC<any> = (props) => {
       >
         <Box
           className="fixed  flex items-top justify-center rounded-lg border-2 border-black overflow-y-auto font-sans font-medium text-sm text-slate-300 bg-slate-800"
-          sx={{width: 600, height: 400, bgcolor: 'background.paper', boxShadow: 24,p:2,}}
+          sx={{
+            width: 600,
+            height: 400,
+            bgcolor: "background.paper",
+            boxShadow: 24,
+            p: 2,
+          }}
         >
           <div className="w-full">
-            <Typography id="modal-modal-title" variant="h6" component="h2" className="mb-4">
+            <Typography
+              id="modal-modal-title"
+              variant="h6"
+              component="h2"
+              className="mb-4"
+            >
               Patient History
             </Typography>
             <Typography id="modal-modal-description" className="mt-4">
@@ -577,29 +636,30 @@ const DataInputForm: React.FC<any> = (props) => {
                     </>
                   ) : (
                     <>
-                    "Hi"
-                    <br />
+                      "Hi"
+                      <br />
                     </> // Fallback text if date is not present
                   )}
-                  {historyDetail.details? historyDetail.details.split('\r\n').map((line, lineIndex) => (
-                    <span key={lineIndex}>
-                      {line}
-                      <br />
-                    </span>
-                  ))
-                  :
-                  <>
-                  Hi
-                  </>
-                  }
-                  {index < historyDetails.length - 1 && <br />} {/* Add a break between details */}
+                  {historyDetail.details ? (
+                    historyDetail.details
+                      .split("\r\n")
+                      .map((line, lineIndex) => (
+                        <span key={lineIndex}>
+                          {line}
+                          <br />
+                        </span>
+                      ))
+                  ) : (
+                    <>Hi</>
+                  )}
+                  {index < historyDetails.length - 1 && <br />}{" "}
+                  {/* Add a break between details */}
                 </React.Fragment>
               ))}
             </Typography>
           </div>
         </Box>
       </Modal>
-
     </div>
   );
 };
