@@ -75,7 +75,7 @@ export default function Login() {
           body: JSON.stringify({ email, password }),
         });
 
-        if (response.status == 200) {
+        if (response.status == 200 || response.status == 402) {
           console.log("Login success", response);
           setSnackbarMessage("Login Success");
           setSnackbarSeverity("success");
@@ -84,10 +84,6 @@ export default function Login() {
           // Delay navigation to show snackbar
           setTimeout(() => {
             router.push("/inputform");
-            // router.push({
-            //   pathname: "/inputform",
-            //   query: { doctorName: 'propValue' }
-            // });
           }, 2000);
         } else if (response.status == 401) {
           console.log("Login failed", response.statusText);
