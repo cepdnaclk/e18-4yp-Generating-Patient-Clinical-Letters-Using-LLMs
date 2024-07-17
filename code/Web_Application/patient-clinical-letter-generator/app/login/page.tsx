@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import HomeIcon from "@/components/HomeNavigator";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import {
   Snackbar,
   Alert,
@@ -126,13 +127,12 @@ export default function Login() {
 
   return (
     <div>
-      <div className="flex justify-end">
-        <div className="text-white font-bold">
-          <HomeIcon />
-        </div>
-      </div>
-
-      <div className="auth-form-container">
+      <div className="relative auth-form-container">
+        <Link href="/">
+          <div className="absolute top-5 left-5">
+            <ArrowBackRoundedIcon className="text-gray-400 font-bold" />
+          </div>
+        </Link>
         <label className="login-register-heading font-sans text-slate-200 font-medium mb-9 tracking-wider">
           Login
         </label>

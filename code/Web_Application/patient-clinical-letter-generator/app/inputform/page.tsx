@@ -22,6 +22,7 @@ import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import CleaningServicesRoundedIcon from "@mui/icons-material/CleaningServicesRounded";
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import Divider from "@mui/material/Divider";
 // import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import axios from "axios";
 import Link from "next/link";
@@ -349,14 +350,22 @@ const DataInputForm: React.FC<any> = (props) => {
   return (
     <div className="data-input-container box-border w-full h-screen flex flex-col px-7 md:px-16 py-2">
       <div className="menu-bar w-full px-1 h-16 text-white flex flex-row place-content-between pt-2 mb-3">
-        <div>
+        {/* <div>
           <MyDatePicker
             labelName="Date:"
             type="default"
             selectedDate={selectedDate0}
             onDateChange={handleDefaultChange}
           />
+        </div> */}
+        <div className="flex items-center bg-slate-600 hover:bg-slate-500 px-7 my-1 rounded-2xl text-white text-md font-medium">
+          Date:{" "}
+          <span className="ml-3 text-bold">
+            {" "}
+            {selectedDate0.toLocaleDateString()}
+          </span>
         </div>
+
         <div className="right-menu-items h-fit w-fit flex flex-row">
           <div
             className="flex items-center bg-slate-500 hover:bg-slate-400 px-2 py-1 rounded-2xl mr-4"
@@ -608,10 +617,10 @@ const DataInputForm: React.FC<any> = (props) => {
         className="flex items-center justify-center"
       >
         <Box
-          className="fixed  flex items-top justify-center rounded-lg border-2 border-black overflow-y-auto font-sans font-medium text-sm text-slate-300 bg-slate-800"
+          className="fixed  flex items-top justify-center rounded-lg border-2 border-black overflow-y-auto font-sans font-medium text-sm text-slate-300 bg-slate-800 modal-content"
           sx={{
-            width: 600,
-            height: 400,
+            width: "50%",
+            height: "75%",
             bgcolor: "background.paper",
             boxShadow: 24,
             p: 2,
@@ -653,6 +662,10 @@ const DataInputForm: React.FC<any> = (props) => {
                     <>Hi</>
                   )}
                   {index < historyDetails.length - 1 && <br />}{" "}
+                  <>
+                    <Divider style={{ borderColor: "#A5A5A4" }} /> <br />
+                    {/* Add a divider between details */}
+                  </>
                   {/* Add a break between details */}
                 </React.Fragment>
               ))}

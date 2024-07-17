@@ -18,3 +18,20 @@
 .output-textarea::-webkit-scrollbar-track {
     background-color: rgba(113, 113, 113, 0.1);
 }
+
+/* Custom scrollbar for WebKit browsers */
+.modal-content::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+.modal-content::-webkit-scrollbar-track {
+    background: #202c3c;
+    border-radius: 10px;
+}
+  
+.modal-content::-webkit-scrollbar-thumb {
+    background-color: #4f4e4e; /* Thumb color */
+    border-radius: 10px;
+    border: 3px solid #202c3c; /* Padding around thumb */
+}
+  
