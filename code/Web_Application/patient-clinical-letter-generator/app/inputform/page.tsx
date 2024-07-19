@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { marked } from "marked";
 import {
   TextField,
   Button,
@@ -134,6 +135,81 @@ const DataInputForm: React.FC<any> = (props) => {
     }
   };
 
+  // const handleGenLetterClick = async (voice2TextInput: string) => {
+  //   try {
+  //     const { patient_id, patient_name, birthdate } = selectedPatientDetails;
+
+  //     // Validate patient_name and birthdate
+  //     if (!patient_name || !birthdate) {
+  //       alert("please select patient first!");
+  //       throw new Error("Patient details incomplete or missing");
+  //     }
+
+  //     const prompt = `Name: ${
+  //       selectedPatientDetails.patient_name
+  //     }\nAge: ${calculateAge(
+  //       selectedPatientDetails.birthdate
+  //     )}\n${voice2TextInput}\n\ngenerate a ${letterType} letter for the above given patient details. Make sure to make the letter customized, descriptive and readable`;
+
+  //     setLoading(true);
+  //     setOutput("");
+  //     saveHistoryData(patient_id, selectedDate0, voice2TextInput);
+  //     const response = await fetch("http://localhost:5050/api/generate", {
+  //       //ollama serve api
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         model: "llama3-ft", //set ollama model
+  //         prompt: prompt,
+  //       }),
+  //     });
+
+  //     if (!response.ok || !response.body) {
+  //       throw new Error("Failed to send message");
+  //     }
+
+  //     const reader = response.body.getReader();
+  //     const decoder = new TextDecoder("utf-8");
+  //     let result = "";
+  //     let firstWordShown = false;
+
+  //     while (true) {
+  //       const { done, value } = await reader.read();
+  //       if (done) break;
+  //       result += decoder.decode(value, { stream: true });
+
+  //       const lines = result.split("\n");
+  //       result = lines.pop() || "";
+
+  //       for (const line of lines) {
+  //         if (line) {
+  //           const parsed = JSON.parse(line);
+  //           if (parsed.done) break;
+  //           if (!firstWordShown) {
+  //             setLoading(false);
+  //             firstWordShown = true;
+  //           }
+  //           setOutput((prev) => prev + parsed.response);
+  //         }
+  //       }
+  //     }
+
+  //     if (!firstWordShown) {
+  //       setLoading(false);
+  //     }
+
+  //     setOutput((prev) => prev + result);
+
+  //     console.log("Message sent successfully");
+  //   } catch (error) {
+  //     console.error("Error:", error);
+  //     setLoading(false);
+  //     setOutput("Error occured! Try again");
+  //   }
+  // };
+
   const handleGenLetterClick = async (voice2TextInput: string) => {
     try {
       const { patient_id, patient_name, birthdate } = selectedPatientDetails;
@@ -151,10 +227,9 @@ const DataInputForm: React.FC<any> = (props) => {
       )}\n${voice2TextInput}\n\ngenerate a ${letterType} letter for the above given patient details. Make sure to make the letter customized, descriptive and readable`;
 
       setLoading(true);
-      setOutput("");
+      setOutput(""); // Clear previous output
       saveHistoryData(patient_id, selectedDate0, voice2TextInput);
       const response = await fetch("http://localhost:5050/api/generate", {
-        //ollama serve api
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,7 +265,12 @@ const DataInputForm: React.FC<any> = (props) => {
               setLoading(false);
               firstWordShown = true;
             }
-            setOutput((prev) => prev + parsed.response);
+            // Convert parsed response to HTML manually
+            let formattedResponse = parsed.response
+              .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // bold
+              .replace(/\*(.*?)\*/g, "<em>$1</em>") // italic
+              .replace(/\n/g, "<br />"); // newline
+            setOutput((prev) => prev + formattedResponse);
           }
         }
       }
@@ -199,13 +279,18 @@ const DataInputForm: React.FC<any> = (props) => {
         setLoading(false);
       }
 
-      setOutput((prev) => prev + result);
+      // Append any remaining text in result to the output and format it
+      let formattedResult = result
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // bold
+        .replace(/\*(.*?)\*/g, "<em>$1</em>") // italic
+        .replace(/\n/g, "<br />"); // newline
+      setOutput((prev) => prev + formattedResult);
 
       console.log("Message sent successfully");
     } catch (error) {
       console.error("Error:", error);
       setLoading(false);
-      setOutput("Error occured! Try again");
+      setOutput("Error occurred! Try again");
     }
   };
 
@@ -539,15 +624,21 @@ const DataInputForm: React.FC<any> = (props) => {
                     </div>
                   </>
                 ) : (
+                  // <>
+                  //   <textarea
+                  //     className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none"
+                  //     style={{ whiteSpace: "pre-line" }}
+                  //     value={output}
+                  //     placeholder="Here is your output will be shown ..."
+                  //     onChange={(e) => setOutput(e.target.value)}
+                  //     disabled={!outputEditable}
+                  //   />
+                  // </>
                   <>
-                    <textarea
-                      className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none"
-                      style={{ whiteSpace: "pre-line" }}
-                      value={output}
-                      placeholder="Here is your output will be shown ..."
-                      onChange={(e) => setOutput(e.target.value)}
-                      disabled={!outputEditable}
-                    />
+                    <div
+                      className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none overflow-auto"
+                      dangerouslySetInnerHTML={{ __html: output }}
+                    ></div>
                   </>
                 )}
               </div>
