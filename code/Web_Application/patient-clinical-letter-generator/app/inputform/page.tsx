@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { marked } from "marked";
 import {
@@ -89,6 +89,14 @@ const DataInputForm: React.FC<any> = (props) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [historyDetails, setHistoryDetails] = useState<HistoryDetail[]>([]);
   const [patientname, setPatientname] = useState("");
+
+  const outputRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [output]);
 
   const calculateAge = (birthdate: string) => {
     const birthDate = new Date(birthdate);
@@ -216,14 +224,12 @@ const DataInputForm: React.FC<any> = (props) => {
 
       // Validate patient_name and birthdate
       if (!patient_name || !birthdate) {
-        alert("please select patient first!");
+        alert("Please select a patient first!");
         throw new Error("Patient details incomplete or missing");
       }
 
-      const prompt = `Name: ${
-        selectedPatientDetails.patient_name
-      }\nAge: ${calculateAge(
-        selectedPatientDetails.birthdate
+      const prompt = `Name: ${patient_name}\nAge: ${calculateAge(
+        birthdate
       )}\n${voice2TextInput}\n\ngenerate a ${letterType} letter for the above given patient details. Make sure to make the letter customized, descriptive and readable`;
 
       setLoading(true);
@@ -235,7 +241,7 @@ const DataInputForm: React.FC<any> = (props) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "llama3-ft", //set ollama model
+          model: "llama3-ft", // set ollama model
           prompt: prompt,
         }),
       });
@@ -248,6 +254,16 @@ const DataInputForm: React.FC<any> = (props) => {
       const decoder = new TextDecoder("utf-8");
       let result = "";
       let firstWordShown = false;
+      let uptoLastLine = "";
+      let lastLine = "";
+
+      const formatResponse = (text: string): string => {
+        // console.log(text);
+        return text
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // bold
+          .replace(/\*(.*?)\*/g, "<em>$1</em>") // italic
+          .replace(/\n/g, "<br />"); // newline
+      };
 
       while (true) {
         const { done, value } = await reader.read();
@@ -265,12 +281,17 @@ const DataInputForm: React.FC<any> = (props) => {
               setLoading(false);
               firstWordShown = true;
             }
-            // Convert parsed response to HTML manually
-            let formattedResponse = parsed.response
-              .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // bold
-              .replace(/\*(.*?)\*/g, "<em>$1</em>") // italic
-              .replace(/\n/g, "<br />"); // newline
-            setOutput((prev) => prev + formattedResponse);
+
+            lastLine += parsed.response;
+            setOutput(uptoLastLine + lastLine);
+            if (parsed.response.includes("\n")) {
+              uptoLastLine += formatResponse(lastLine);
+              setOutput(uptoLastLine);
+              lastLine = "";
+            }
+            // Format the parsed response
+            // const formattedResponse = formatResponse(parsed.response);
+            // setOutput((prev) => prev + formattedResponse);
           }
         }
       }
@@ -280,10 +301,7 @@ const DataInputForm: React.FC<any> = (props) => {
       }
 
       // Append any remaining text in result to the output and format it
-      let formattedResult = result
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // bold
-        .replace(/\*(.*?)\*/g, "<em>$1</em>") // italic
-        .replace(/\n/g, "<br />"); // newline
+      const formattedResult = formatResponse(result);
       setOutput((prev) => prev + formattedResult);
 
       console.log("Message sent successfully");
@@ -638,6 +656,7 @@ const DataInputForm: React.FC<any> = (props) => {
                     <div
                       className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none overflow-auto"
                       dangerouslySetInnerHTML={{ __html: output }}
+                      ref={outputRef}
                     ></div>
                   </>
                 )}
