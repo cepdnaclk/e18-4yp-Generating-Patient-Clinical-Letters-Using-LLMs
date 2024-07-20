@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { marked } from "marked";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.bubble.css";
 import {
   TextField,
   Button,
@@ -33,7 +34,8 @@ import MyDatePicker from "@/components/DatePicker";
 import "react-datepicker/dist/react-datepicker.css";
 import "./loadIcon.css";
 import "./inputForm.css";
-import { jsPDF } from "jspdf";
+import jsPDF from "jspdf";
+import { htmlToText } from "html-to-text";
 
 import LetterTypeSelect from "@/components/LetterTypeSelect";
 import PatientSearchBar from "@/components/PatientSearchBar";
@@ -41,6 +43,7 @@ import PatientSearchResults from "@/components/PatientSearchResults";
 
 import profilePic from "@/public/images/profile_pic.jpg";
 import { Router } from "next/router";
+import { headers } from "next/headers";
 
 interface PatientDetails {
   patient_id: number;
@@ -52,6 +55,26 @@ interface HistoryDetail {
   date: string;
   details: string;
 }
+
+const modules = {
+  toolbar: [
+    ["bold", "italic", "underline", "strike", "link"],
+    [
+      { header: "2" },
+      { header: "3" },
+      { align: [] },
+      { color: [] },
+      { background: [] },
+    ],
+    [
+      { list: "ordered" },
+      { list: "bullet" },
+      { indent: "-1" },
+      { indent: "+1" },
+    ],
+    ["clean"],
+  ],
+};
 
 const DataInputForm: React.FC<any> = (props) => {
   const [email, setEmail] = useState("");
@@ -91,10 +114,22 @@ const DataInputForm: React.FC<any> = (props) => {
   const [patientname, setPatientname] = useState("");
 
   const outputRef = useRef<HTMLDivElement | null>(null);
+  const quillRef = useRef<ReactQuill>(null);
 
   useEffect(() => {
     if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+      outputRef.current.scrollTo({
+        top: outputRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+    if (quillRef.current) {
+      // Access the editor's container element
+      const editor = quillRef.current.getEditor();
+      const scrollContainer = editor.root; // This is the actual content area of the editor
+
+      // Scroll the content to the bottom
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
     }
   }, [output]);
 
@@ -333,31 +368,141 @@ const DataInputForm: React.FC<any> = (props) => {
     };
   }, [voice2TextInput, handleGenLetterClick]);
 
+  // const downloadClinicalLetter = () => {
+  //   const doc = new jsPDF();
+  //   const pageWidth = doc.internal.pageSize.getWidth();
+  //   const margin = 10;
+  //   const maxLineWidth = pageWidth - margin * 2;
+  //   const lineHeight = 10;
+  //   const splitText = doc.splitTextToSize(output, maxLineWidth);
+  //   let cursorY = margin;
+
+  //   splitText.forEach((line: string | string[]) => {
+  //     doc.text(line, margin, cursorY);
+  //     cursorY += lineHeight;
+
+  //     if (cursorY > doc.internal.pageSize.getHeight() - margin) {
+  //       doc.addPage();
+  //       cursorY = margin;
+  //     }
+  //   });
+
+  //   doc.save("generated.pdf");
+  // };
+
+  const cleanStringArray = (arr: string[]): string[] => {
+    // Remove consecutive empty strings if both sides have non-empty strings
+    const cleanedArray: string[] = [];
+
+    for (let i = 0; i < arr.length; i++) {
+      if (arr[i] === "") {
+        if (
+          i === 0 ||
+          i === arr.length - 1 ||
+          arr[i - 1] === "" ||
+          arr[i + 1] === ""
+        ) {
+          cleanedArray.push(arr[i]);
+        } else {
+          // If there's an empty string surrounded by non-empty strings, skip it
+          continue;
+        }
+      } else {
+        cleanedArray.push(arr[i]);
+      }
+    }
+
+    // Remove multiple consecutive empty strings, keeping only one
+    const resultArray: string[] = [];
+    let wasLastEmpty = false;
+
+    for (const item of cleanedArray) {
+      if (item === "") {
+        if (!wasLastEmpty) {
+          resultArray.push(item);
+          wasLastEmpty = true;
+        }
+      } else {
+        resultArray.push(item);
+        wasLastEmpty = false;
+      }
+    }
+
+    return resultArray;
+  };
+
   const downloadClinicalLetter = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
     const margin = 10;
-    const maxLineWidth = pageWidth - margin * 2;
-    const lineHeight = 10;
-    const splitText = doc.splitTextToSize(output, maxLineWidth);
+    const pdfWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    const pdfHeight = doc.internal.pageSize.getHeight() - margin * 2;
+    const lineHeight = 5.5; // Adjust line height for better spacing within paragraphs
+    const paragraphSpacing = 4.5; // Additional spacing between paragraphs
+    const fontSize = 12; // Adjust the font size as needed
+    doc.setFontSize(fontSize);
+
+    // Convert HTML to text
+    const text = htmlToText(output, {
+      wordwrap: pdfWidth,
+      ignoreImage: true, // Ignore images if not needed
+    });
+
+    // Split text into lines
+    let lines: string[];
+    if (outputEditable) {
+      lines = cleanStringArray(doc.splitTextToSize(text, pdfWidth));
+    } else {
+      lines = doc.splitTextToSize(text, pdfWidth);
+    }
+    // const lines: string[] = cleanStringArray(
+    //   doc.splitTextToSize(text, pdfWidth)
+    // );
+    // const lines: string[] = doc.splitTextToSize(text, pdfWidth);
+    console.log(lines);
+
     let cursorY = margin;
+    let previousLineEmpty = false;
 
-    splitText.forEach((line: string | string[]) => {
-      doc.text(line, margin, cursorY);
-      cursorY += lineHeight;
-
-      if (cursorY > doc.internal.pageSize.getHeight() - margin) {
+    // Add text to PDF
+    lines.forEach((line: string) => {
+      if (cursorY + lineHeight > pdfHeight) {
         doc.addPage();
         cursorY = margin;
       }
+
+      if (!previousLineEmpty && line.trim() === "") {
+        // Add extra space between paragraphs
+        cursorY += paragraphSpacing;
+      } else {
+        if (line.trim() === "") {
+        } else {
+          doc.text(line, margin, cursorY);
+          cursorY += lineHeight;
+        }
+      }
+
+      previousLineEmpty = line.trim() === "";
     });
 
     doc.save("generated.pdf");
   };
 
   const handleCopyToClipboard = () => {
+    const stripHtmlTags = (html: string): string => {
+      const div = document.createElement("div");
+      div.innerHTML = html.replace(/<br\s*\/?>/gi, "\n");
+      return div.textContent || div.innerText || "";
+    };
+
+    const plainTextOutput = stripHtmlTags(output);
+
     navigator.clipboard
-      .writeText(output)
+      .writeText(plainTextOutput)
       .then(() => {
         setTooltipMsg("Copied!");
         setTooltipOpen(true);
@@ -630,7 +775,7 @@ const DataInputForm: React.FC<any> = (props) => {
               Output
             </div>
             <div className="output-container relative flex-grow">
-              <div className="relative h-full overflow-hidden font-sans font-medium text-sm text-slate-300 bg-slate-800 rounded-md">
+              <div className="relative h-full font-sans font-medium text-sm text-slate-300 bg-slate-800 rounded-md">
                 {loading ? (
                   <>
                     <div className="w-full h-full flex items-center justify-center">
@@ -641,20 +786,21 @@ const DataInputForm: React.FC<any> = (props) => {
                       </div>
                     </div>
                   </>
+                ) : outputEditable ? (
+                  <>
+                    <ReactQuill
+                      className="output-textarea absolute inset-0 w-full h-full bg-transparent pt-4 pb-2 text-justify resize-none"
+                      theme="bubble"
+                      value={output}
+                      onChange={setOutput}
+                      modules={modules} // Use custom toolbar
+                      ref={quillRef}
+                    />
+                  </>
                 ) : (
-                  // <>
-                  //   <textarea
-                  //     className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none"
-                  //     style={{ whiteSpace: "pre-line" }}
-                  //     value={output}
-                  //     placeholder="Here is your output will be shown ..."
-                  //     onChange={(e) => setOutput(e.target.value)}
-                  //     disabled={!outputEditable}
-                  //   />
-                  // </>
                   <>
                     <div
-                      className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none overflow-auto"
+                      className="output-textarea absolute inset-0 w-full h-full bg-transparent px-4 py-7 text-justify resize-none overflow-auto cursor-default"
                       dangerouslySetInnerHTML={{ __html: output }}
                       ref={outputRef}
                     ></div>
@@ -667,20 +813,30 @@ const DataInputForm: React.FC<any> = (props) => {
                     outputEditable ? "w-32 px-3" : "w-10"
                   } bg-red-500 h-9 rounded-2xl flex justify-center items-center shadow-lg border 
                   border-red-500 text-white font-sans font-medium hover:bg-red-600 hover:text-white hover:border-red-600 
-                  active:bg-red-700 active:text-white active:border-red-800 mr-1 transition-all duration-300 ease-in-out`}
+                  active:bg-red-700 active:text-white active:border-red-800 mr-1 transition-all duration-300 ease-in-out overflow-hidden`}
                   onClick={() => {
                     setOutputEditable((prevState) => !prevState);
                   }}
                 >
                   <DriveFileRenameOutlineRoundedIcon style={{ fontSize: 20 }} />
                   {outputEditable ? (
-                    <label className="text-sm ml-2 transition-opacity duration-300 ease-in-out opacity-100">
-                      Edit mode
+                    <label
+                      className="text-sm w-15 ml-2 opacity-100 transform translate-x-0"
+                      style={{
+                        transition:
+                          "transform 300ms ease-in-out 50ms, opacity 300ms ease-in-out",
+                      }}
+                    >
+                      Edit Mode
                     </label>
                   ) : (
-                    <label className="text-sm ml-2 transition-opacity duration-300 ease-in-out opacity-0 absolute">
-                      Edit mode
-                    </label>
+                    <label
+                      className="text-sm w-15 opacity-0 transform translate-x-full"
+                      style={{
+                        transition:
+                          "transform 50ms ease-in-out, opacity 300ms ease-in-out",
+                      }}
+                    ></label>
                   )}
                 </div>
 
