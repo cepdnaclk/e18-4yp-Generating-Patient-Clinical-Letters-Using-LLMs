@@ -1,20 +1,13 @@
 "use client";
 
+// inbuild
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.bubble.css";
-import {
-  TextField,
-  Button,
-  useRadioGroup,
-  Modal,
-  Box,
-  Typography,
-} from "@mui/material";
-import Tooltip from "@mui/material/Tooltip";
 import Image from "next/image";
 
+// mui
+import { Button, Modal, Box, Typography } from "@mui/material";
+import Tooltip from "@mui/material/Tooltip";
 import MicIcon from "@mui/icons-material/Mic";
 import StopRoundedIcon from "@mui/icons-material/StopRounded";
 import PrintIcon from "@mui/icons-material/Print";
@@ -25,25 +18,28 @@ import CleaningServicesRoundedIcon from "@mui/icons-material/CleaningServicesRou
 import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
 import Divider from "@mui/material/Divider";
-// import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import axios from "axios";
-import Link from "next/link";
+
+// custom components
 import MyDatePicker from "@/components/DatePicker";
-
-// import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import "./loadIcon.css";
-import "./inputForm.css";
-import jsPDF from "jspdf";
-import { htmlToText } from "html-to-text";
-
 import LetterTypeSelect from "@/components/LetterTypeSelect";
 import PatientSearchBar from "@/components/PatientSearchBar";
 import PatientSearchResults from "@/components/PatientSearchResults";
+import DropDownMenu from "@/components/DropDownMenu";
+import SettingDropDown from "@/components/SettingDropDown";
 
+// other
+import ReactQuill from "react-quill";
+import jsPDF from "jspdf";
+import { htmlToText } from "html-to-text";
+
+// images
 import profilePic from "@/public/images/profile_pic.jpg";
-import { Router } from "next/router";
-import { headers } from "next/headers";
+
+// css
+import "react-datepicker/dist/react-datepicker.css";
+import "./loadIcon.css";
+import "./inputForm.css";
+import "react-quill/dist/quill.bubble.css";
 
 interface PatientDetails {
   patient_id: number;
@@ -113,8 +109,36 @@ const DataInputForm: React.FC<any> = (props) => {
   const [historyDetails, setHistoryDetails] = useState<HistoryDetail[]>([]);
   const [patientname, setPatientname] = useState("");
 
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [isSettingDropdownVisible, setIsSettingDropdownVisible] =
+    useState(false);
+
   const outputRef = useRef<HTMLDivElement | null>(null);
   const quillRef = useRef<ReactQuill>(null);
+
+  const toggleDropdown = () => {
+    setIsDropdownVisible(!isDropdownVisible);
+  };
+
+  const showDropdown = () => {
+    setIsDropdownVisible(true);
+  };
+
+  const hideDropdown = () => {
+    setTimeout(() => setIsDropdownVisible(false), 200); // Slight delay to allow cursor to move
+  };
+
+  const toggleSettingDropdown = () => {
+    setIsSettingDropdownVisible(!isSettingDropdownVisible);
+  };
+
+  const showSettingDropdown = () => {
+    setIsSettingDropdownVisible(true);
+  };
+
+  const hideSettingDropdown = () => {
+    setTimeout(() => setIsSettingDropdownVisible(false), 200); // Slight delay to allow cursor to move
+  };
 
   useEffect(() => {
     if (outputRef.current) {
@@ -178,81 +202,6 @@ const DataInputForm: React.FC<any> = (props) => {
     }
   };
 
-  // const handleGenLetterClick = async (voice2TextInput: string) => {
-  //   try {
-  //     const { patient_id, patient_name, birthdate } = selectedPatientDetails;
-
-  //     // Validate patient_name and birthdate
-  //     if (!patient_name || !birthdate) {
-  //       alert("please select patient first!");
-  //       throw new Error("Patient details incomplete or missing");
-  //     }
-
-  //     const prompt = `Name: ${
-  //       selectedPatientDetails.patient_name
-  //     }\nAge: ${calculateAge(
-  //       selectedPatientDetails.birthdate
-  //     )}\n${voice2TextInput}\n\ngenerate a ${letterType} letter for the above given patient details. Make sure to make the letter customized, descriptive and readable`;
-
-  //     setLoading(true);
-  //     setOutput("");
-  //     saveHistoryData(patient_id, selectedDate0, voice2TextInput);
-  //     const response = await fetch("http://localhost:5050/api/generate", {
-  //       //ollama serve api
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         model: "llama3-ft", //set ollama model
-  //         prompt: prompt,
-  //       }),
-  //     });
-
-  //     if (!response.ok || !response.body) {
-  //       throw new Error("Failed to send message");
-  //     }
-
-  //     const reader = response.body.getReader();
-  //     const decoder = new TextDecoder("utf-8");
-  //     let result = "";
-  //     let firstWordShown = false;
-
-  //     while (true) {
-  //       const { done, value } = await reader.read();
-  //       if (done) break;
-  //       result += decoder.decode(value, { stream: true });
-
-  //       const lines = result.split("\n");
-  //       result = lines.pop() || "";
-
-  //       for (const line of lines) {
-  //         if (line) {
-  //           const parsed = JSON.parse(line);
-  //           if (parsed.done) break;
-  //           if (!firstWordShown) {
-  //             setLoading(false);
-  //             firstWordShown = true;
-  //           }
-  //           setOutput((prev) => prev + parsed.response);
-  //         }
-  //       }
-  //     }
-
-  //     if (!firstWordShown) {
-  //       setLoading(false);
-  //     }
-
-  //     setOutput((prev) => prev + result);
-
-  //     console.log("Message sent successfully");
-  //   } catch (error) {
-  //     console.error("Error:", error);
-  //     setLoading(false);
-  //     setOutput("Error occured! Try again");
-  //   }
-  // };
-
   const handleGenLetterClick = async (voice2TextInput: string) => {
     try {
       const { patient_id, patient_name, birthdate } = selectedPatientDetails;
@@ -293,7 +242,6 @@ const DataInputForm: React.FC<any> = (props) => {
       let lastLine = "";
 
       const formatResponse = (text: string): string => {
-        // console.log(text);
         return text
           .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // bold
           .replace(/\*(.*?)\*/g, "<em>$1</em>") // italic
@@ -324,9 +272,6 @@ const DataInputForm: React.FC<any> = (props) => {
               setOutput(uptoLastLine);
               lastLine = "";
             }
-            // Format the parsed response
-            // const formattedResponse = formatResponse(parsed.response);
-            // setOutput((prev) => prev + formattedResponse);
           }
         }
       }
@@ -367,28 +312,6 @@ const DataInputForm: React.FC<any> = (props) => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [voice2TextInput, handleGenLetterClick]);
-
-  // const downloadClinicalLetter = () => {
-  //   const doc = new jsPDF();
-  //   const pageWidth = doc.internal.pageSize.getWidth();
-  //   const margin = 10;
-  //   const maxLineWidth = pageWidth - margin * 2;
-  //   const lineHeight = 10;
-  //   const splitText = doc.splitTextToSize(output, maxLineWidth);
-  //   let cursorY = margin;
-
-  //   splitText.forEach((line: string | string[]) => {
-  //     doc.text(line, margin, cursorY);
-  //     cursorY += lineHeight;
-
-  //     if (cursorY > doc.internal.pageSize.getHeight() - margin) {
-  //       doc.addPage();
-  //       cursorY = margin;
-  //     }
-  //   });
-
-  //   doc.save("generated.pdf");
-  // };
 
   const cleanStringArray = (arr: string[]): string[] => {
     // Remove consecutive empty strings if both sides have non-empty strings
@@ -459,11 +382,6 @@ const DataInputForm: React.FC<any> = (props) => {
     } else {
       lines = doc.splitTextToSize(text, pdfWidth);
     }
-    // const lines: string[] = cleanStringArray(
-    //   doc.splitTextToSize(text, pdfWidth)
-    // );
-    // const lines: string[] = doc.splitTextToSize(text, pdfWidth);
-    console.log(lines);
 
     let cursorY = margin;
     let previousLineEmpty = false;
@@ -607,23 +525,31 @@ const DataInputForm: React.FC<any> = (props) => {
           />
         </div> */}
         <div className="flex items-center bg-slate-600 hover:bg-slate-500 px-7 my-1 rounded-2xl text-white text-md font-medium">
-          Date:{" "}
-          <span className="ml-3 text-bold">
-            {" "}
+          <label>Date:</label>
+          <label className="ml-3 text-bold">
             {selectedDate0.toLocaleDateString()}
-          </span>
+          </label>
         </div>
 
         <div className="right-menu-items h-fit w-fit flex flex-row">
           <div
-            className="flex items-center bg-slate-500 hover:bg-slate-400 px-2 py-1 rounded-2xl mr-4"
-            onClick={() => {
-              router.push("/");
-            }}
+            className="relative flex items-center bg-slate-500 hover:bg-slate-400 px-2 py-1 rounded-2xl mr-4"
+            onMouseEnter={showSettingDropdown}
+            onMouseLeave={hideSettingDropdown}
+            onClick={toggleSettingDropdown}
           >
             <SettingsRoundedIcon />
+            <SettingDropDown
+              isDropdownVisible={isSettingDropdownVisible}
+              hideDropdown={hideSettingDropdown}
+            />
           </div>
-          <div className="flex items-center bg-slate-500 hover:bg-slate-400 rounded-2xl">
+          <div
+            className="relative flex items-center bg-slate-500 hover:bg-slate-400 rounded-2xl"
+            onMouseEnter={showDropdown}
+            onMouseLeave={hideDropdown}
+            onClick={toggleDropdown}
+          >
             <div className="user-avatar bg-slate-200 w-9 h-9 rounded-full m-1 overflow-hidden flex-shrink-0 relative">
               <Image
                 src={profilePic}
@@ -632,12 +558,15 @@ const DataInputForm: React.FC<any> = (props) => {
               />
             </div>
             <div className="user-name px-2 py-1 ml-2">
-              <label className="text-white text-md font-medium">
-                {/* Doctor Username */}
+              <label className="text-white text-md font-medium min-w-32">
                 Madhushan Nanayakkara
               </label>
             </div>
-            <KeyboardArrowDownRoundedIcon className=" mr-3" />
+            <KeyboardArrowDownRoundedIcon className="mr-3" />
+            <DropDownMenu
+              isDropdownVisible={isDropdownVisible}
+              hideDropdown={hideDropdown}
+            />
           </div>
         </div>
       </div>
