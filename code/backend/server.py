@@ -151,7 +151,7 @@ def get_patient_details():
 
     # Query to retrieve patient_name and birthdate
     mycursor = mydb.cursor()
-    mycursor.execute("SELECT patient_name, birthdata FROM patient WHERE patient_id = %s", (patient_id,))
+    mycursor.execute("SELECT patient_name, birthdate FROM patient WHERE patient_id = %s", (patient_id,))
     patient = mycursor.fetchone()
 
     if not patient:

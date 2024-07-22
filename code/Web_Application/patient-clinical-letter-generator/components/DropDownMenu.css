@@ -1,0 +1,18 @@
+@keyframes clickedAnimation {
+    0% {
+        transform: scale(1);
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    50% {
+        transform: scale(0.95);
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    100% {
+        transform: scale(1);
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+}
+
+.animate-clicked {
+    animation: clickedAnimation 0.3s ease-in-out;
+}
